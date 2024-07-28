@@ -1,0 +1,27 @@
+<form id="bilibili-filter-form">
+    <div>
+        <label>永久屏蔽UP主列表(uid):</label>
+        <input id="blocked-uid-list" style="width: 100%;" type="text">
+    </div>
+    <div>
+        <label>永久屏蔽视频列表(bv号):</label>
+        <input id="blocked-bv-list" style="width: 100%;" type="text">
+    </div>
+    <div>
+        <label>无缝翻页:</label>
+        <label class="switch">
+            <input id="seamless-pagination" type="checkbox">
+            <span class="slider round"></span>
+        </label>
+    </div>
+    <div>
+        <label>默认排序算法:</label>
+        <select id="default-sort-algorithm" style="width: 100%;">
+            <option value="default">B站默认</option>
+            <option value="likes-ratio">播放点赞比</option>
+            <option value="coins-ratio">播放投币比</option>
+            <option value="favorites-ratio">播放收藏比</option>
+        </select>
+    </div>
+</form>
+;
