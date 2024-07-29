@@ -64,6 +64,7 @@
                     <option value="likes-ratio">播放点赞比</option>
                     <option value="coins-ratio">播放投币比</option>
                     <option value="favorites-ratio">播放收藏比</option>
+                    //todo: 不看哔哩哔哩课堂的开关
                 </select>
             </div>
         </form>
