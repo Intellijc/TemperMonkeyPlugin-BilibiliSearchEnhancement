@@ -1,7 +1,8 @@
 // ==UserScript==
 // @name         投币播放比排序
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      1.0
+// @author       Intellijc
 // @description  Sort Bilibili search results by coin/view ratio
 // @match        https://search.bilibili.com/*
 // @grant        none
@@ -14,7 +15,7 @@
     // 等待页面加载完成
     window.addEventListener('load', function() {
         console.log('页面加载完成,等待1秒后执行排序脚本');
-        setTimeout(processSearchResults, 1000);  // 等待1秒
+        setTimeout(processSearchResults, 1000); // 等待1秒
     });
 
     async function processSearchResults() {
@@ -52,24 +53,38 @@
             console.log('找不到视频 URL', linkElement);
             return null;
         }
-        const bvid = videoUrl.split('/').pop().split('?')[0]; // 获取BV号
+        const bvidMatch = videoUrl.match(/\/video\/(BV\w+)/); // 使用正则表达式提取BV号
+        if (!bvidMatch) {
+            console.log('无法提取 BV 号', videoUrl);
+            return null;
+        }
+        const bvid = bvidMatch[1];
         console.log(`正在获取 ${bvid} 视频的信息`);
 
         try {
-            const response = await fetch(`https://api.bilibili.com/x/web-interface/archive/stat?bvid=${bvid}`);
-            const data = await response.json();
-            if (data.code === 0) {
-                const viewCount = data.data.view;
-                const coinCount = data.data.coin;
-                const ratio = coinCount / viewCount;
-                console.log(`视频BV号: ${bvid}: 播放=${viewCount}, 投币=${coinCount}, 币播比=${ratio}`);
-                return {
-                    element: item,
-                    ratio: ratio,
-                    bvid: bvid
-                };
+            const response = await fetch(`https://api.bilibili.com/x/web-interface/view?bvid=${bvid}`, {
+                headers: {
+                    'User-Agent': navigator.userAgent
+                }
+            });
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const data = await response.json();
+                if (data.code === 0) {
+                    const viewCount = data.data.stat.view;
+                    const coinCount = data.data.stat.coin;
+                    const ratio = coinCount / viewCount;
+                    console.log(`视频BV号: ${bvid}: 播放=${viewCount}, 投币=${coinCount}, 币播比=${ratio}`);
+                    return {
+                        element: item,
+                        ratio: ratio,
+                        bvid: bvid
+                    };
+                } else {
+                    console.log(`API 返回错误码: ${data.code}, 消息: ${data.message}`);
+                }
             } else {
-                console.log(`API 返回错误码: ${data.code}, 消息: ${data.message}`);
+                console.error(`非 JSON 响应: ${contentType}`);
             }
         } catch (error) {
             console.error(`获取 ${bvid} 信息失败:`, error);
@@ -78,13 +93,19 @@
     }
 
     function reorderVideos(sortedArray) {
-        const container = document.querySelector('.video-list');
+        const container = document.evaluate('//*[@id="i_cecream"]/div/div[2]/div[2]/div/div/div/div[2]/div', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
         if (!container) {
             console.log('找不到视频列表容器');
             return;
         }
-        sortedArray.forEach(info => {
-            container.appendChild(info.element);
-        });
+        const videoContainers = container.children;
+        if (videoContainers.length < sortedArray.length) {
+            console.log('视频容器数量少于视频数量');
+            return;
+        }
+        // 重新排序视频元素
+        for (let i = 0; i < sortedArray.length; i++) {
+            videoContainers[i].appendChild(sortedArray[i].element);
+        }
     }
 })();

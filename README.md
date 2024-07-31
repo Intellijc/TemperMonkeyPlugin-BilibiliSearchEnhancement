@@ -26,6 +26,11 @@ https://github.com/SocialSisterYi/bilibili-API-collect
 4. 时光机app,调用b站api
 https://github.com/10miaomiao/bilimiao2/tree/master
 
+---
+7.31 实现基础功能之**根据投币播放比排序搜索首页结果** - 版本号: v1.0
 
+无缝翻页功能最后做 因为大部分有效搜索结果都在前面
 
+开发:筛选日期内发布的视频功能实现
 
+---
