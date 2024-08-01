@@ -60,6 +60,12 @@ https://github.com/10miaomiao/bilimiao2/tree/master
 突然在想 如果我找到的视频是 播放投币比大的 是不是意味着这些是垃圾内容的"标题党"视频,反之是优质内容但没有优质标题的,
 这样搜索会使得标题封面丑陋的视频获得过高的权重,而优质封面优质内容的视频比不过他
 
+todo: 预筛选和正式排除算法 都要考虑到搜索的可能不是视频是:专栏,课程,番剧,直播间,主播,话题,用户,相簿,
+[参考这个响应结果](https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/search/search_response.md)
+
+使用https://api.bilibili.com/x/web-interface/wbi/search/all/v2这个接口获取搜索结果,需要wbi签名,
+但是可以通过https://api.bilibili.com/x/web-interface/view?bvid=xxx  这个接口绕过wbi签名
+
 
 ---
 ## 8.2

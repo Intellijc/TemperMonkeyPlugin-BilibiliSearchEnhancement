@@ -42,7 +42,6 @@
             });
             console.log('获取到card:',upUid,bvId,danmakuCount,playCount,duration, publishDate,videoName);
         });
-        console.log('获取到videoInfoArray:', videoInfoArray);
 
         // 筛选视频
         let filteredVideos = videoInfoArray.filter(video => {
@@ -71,7 +70,7 @@
     let cardList = document.querySelectorAll('.bili-video-card');
     let excludeUids = [];
     let minDanmaku = 5;
-    let minPlayCount = 100;
+    let minPlayCount = 2000;
     let dateStart = '2020-01-01';
     let dateEnd = '2024-07-31';
 
