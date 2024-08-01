@@ -17,7 +17,7 @@
     button.style.position = "fixed";
     button.style.top = "250px";
     button.style.right = "15px";
-    button.style.padding = "15px";
+    button.style.padding = "10px 15px";
     button.style.backgroundColor = "#00A1D6";
     button.style.color = "#fff";
     button.style.borderRadius = "5px";
@@ -41,33 +41,31 @@
     panel.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.5)";
     panel.style.zIndex = "9999";
     panel.innerHTML = `
-        <form id="bilibili-filter-form">
-            <div>
-                <label>永久屏蔽UP主列表(uid):</label>
-                <input type="text" id="blocked-uid-list" style="width: 100%;">
-            </div>
-            <div>
-                <label>永久屏蔽视频列表(bv号):</label>
-                <input type="text" id="blocked-bv-list" style="width: 100%;">
-            </div>
-            <div>
-                <label>无缝翻页:</label>
-                <label class="switch">
-                    <input type="checkbox" id="seamless-pagination">
-                    <span class="slider round"></span>
-                </label>
-            </div>
-            <div>
-                <label>默认排序算法:</label>
-                <select id="default-sort-algorithm" style="width: 100%;">
-                    <option value="default">B站默认</option>
-                    <option value="likes-ratio">播放点赞比</option>
-                    <option value="coins-ratio">播放投币比</option>
-                    <option value="favorites-ratio">播放收藏比</option>
-                </select>
-            </div>
-        </form>
-    `;
+    <form id="bilibili-filter-form">
+        <div style="margin-bottom: 15px;">
+            <label>永久屏蔽UP主列表(uid):</label>
+            <input type="text" id="blocked-uid-list" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label>永久屏蔽视频列表(bv号):</label>
+            <input type="text" id="blocked-bv-list" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label>无缝翻页(暂不支持):</label>
+            <label class="switch">
+                <input type="checkbox" id="seamless-pagination">
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label>默认排序算法:</label>
+            <select id="default-sort-algorithm" style="width: 100%;">
+                <option value="default">B站默认</option>
+                <option value="custom">自研排序算法</option>
+                <option value="custom-params">自定义排序参数</option>
+            </select>
+        </div>
+    </form>`;
     document.body.appendChild(panel);
 
     // 显示/隐藏设置面板
@@ -77,6 +75,61 @@
             panel.style.top = (parseInt(button.style.top) + button.offsetHeight + 10) + "px"; // 更新面板位置
             panel.style.right = (window.innerWidth - button.getBoundingClientRect().right - 15) + "px"; // 更新面板右对齐
         }
+    });
+
+    // 保存设置到localStorage
+    function saveSettings() {
+        let blockedUids = document.getElementById('blocked-uid-list').value;
+        let blockedBvs = document.getElementById('blocked-bv-list').value;
+        let seamlessPagination = document.getElementById('seamless-pagination').checked;
+        let defaultSortAlgorithm = document.getElementById('default-sort-algorithm').value;
+
+        // 将设置保存到localStorage
+        localStorage.setItem('bilibili-blocked-uids', blockedUids);
+        localStorage.setItem('bilibili-blocked-bvs', blockedBvs);
+        localStorage.setItem('bilibili-seamless-pagination', seamlessPagination);
+        localStorage.setItem('bilibili-default-sort-algorithm', defaultSortAlgorithm);
+
+        // 显示保存成功提示
+        let saveAlert = document.createElement('div');
+        saveAlert.style.position = "fixed";
+        saveAlert.style.top = "10px";
+        saveAlert.style.left = "50%";
+        saveAlert.style.transform = "translateX(-50%)";
+        saveAlert.style.padding = "10px 20px";
+        saveAlert.style.backgroundColor = "#00A1D6";
+        saveAlert.style.color = "#fff";
+        saveAlert.style.borderRadius = "5px";
+        saveAlert.style.zIndex = "9999";
+        saveAlert.innerText = "设置已保存";
+        document.body.appendChild(saveAlert);
+
+        // 1秒后移除提示
+        setTimeout(() => {
+            document.body.removeChild(saveAlert);
+        }, 1000);
+    }
+
+    // 当面板失去焦点时自动保存并隐藏面板
+    panel.addEventListener('focusout', function (event) {
+        // 检查是否点击在面板外部
+        if (!panel.contains(event.relatedTarget)) {
+            saveSettings();
+            panel.style.display = 'none';
+        }
+    });
+
+    // 加载设置
+    window.addEventListener('load', function () {
+        let blockedUids = localStorage.getItem('bilibili-blocked-uids');
+        let blockedBvs = localStorage.getItem('bilibili-blocked-bvs');
+        let seamlessPagination = localStorage.getItem('bilibili-seamless-pagination') === 'true';
+        let defaultSortAlgorithm = localStorage.getItem('bilibili-default-sort-algorithm');
+
+        document.getElementById('blocked-uid-list').value = blockedUids || '';
+        document.getElementById('blocked-bv-list').value = blockedBvs || '';
+        document.getElementById('seamless-pagination').checked = seamlessPagination;
+        document.getElementById('default-sort-algorithm').value = defaultSortAlgorithm || 'default';
     });
 
     // 按钮拖动功能
@@ -108,33 +161,4 @@
         return false;
     };
 
-    // 保存设置
-    document.getElementById('bilibili-filter-form').addEventListener('submit', function (event) {
-        event.preventDefault();
-        let blockedUids = document.getElementById('blocked-uid-list').value;
-        let blockedBvs = document.getElementById('blocked-bv-list').value;
-        let seamlessPagination = document.getElementById('seamless-pagination').checked;
-        let defaultSortAlgorithm = document.getElementById('default-sort-algorithm').value;
-
-        // 将设置保存到localStorage
-        localStorage.setItem('bilibili-blocked-uids', blockedUids);
-        localStorage.setItem('bilibili-blocked-bvs', blockedBvs);
-        localStorage.setItem('bilibili-seamless-pagination', seamlessPagination);
-        localStorage.setItem('bilibili-default-sort-algorithm', defaultSortAlgorithm);
-
-        alert('设置已保存');
-    });
-
-    // 加载设置
-    window.addEventListener('load', function () {
-        let blockedUids = localStorage.getItem('bilibili-blocked-uids');
-        let blockedBvs = localStorage.getItem('bilibili-blocked-bvs');
-        let seamlessPagination = localStorage.getItem('bilibili-seamless-pagination') === 'true';
-        let defaultSortAlgorithm = localStorage.getItem('bilibili-default-sort-algorithm');
-
-        document.getElementById('blocked-uid-list').value = blockedUids || '';
-        document.getElementById('blocked-bv-list').value = blockedBvs || '';
-        document.getElementById('seamless-pagination').checked = seamlessPagination;
-        document.getElementById('default-sort-algorithm').value = defaultSortAlgorithm || 'default';
-    });
 })();
