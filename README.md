@@ -36,5 +36,5 @@ https://github.com/10miaomiao/bilimiao2/tree/master
 想法: 用户在看完视频后可以选择点击按钮,好或坏, 
 然后脚本会爬取这个视频的信息,获取其点赞收藏播放评论市场等数据,
 根据点赞率,投币率,lg时长等参数,以一个越来越小的学习率去修改我的公式中各个值的权重
-[视频评分算法]()
+[视频评分算法](https://github.com/Qonstantine/TemperMonkeyPlugin-BilibiliSearchEnhancement/blob/805/bilibili%E7%AD%9B%E9%80%89%E5%A2%9E%E5%BC%BA%E8%84%9A%E6%9C%AC/%E8%A7%86%E9%A2%91%E8%AF%84%E5%88%86%E7%AE%97%E6%B3%95.md)
 ---
