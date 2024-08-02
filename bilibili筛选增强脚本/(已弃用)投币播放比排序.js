@@ -2,6 +2,7 @@
 // @name         投币播放比排序
 // @namespace    http://tampermonkey.net/
 // @version      1.0
+// @author       Intellijc
 // @description  Sort Bilibili search results by coin/view ratio
 // @match        https://search.bilibili.com/*
 // @grant        none
@@ -43,11 +44,23 @@
 
     async function getVideoInfo(item) {
         let linkElement = item.querySelector('.bili-video-card__wrap a');
-        if (!linkElement) { console.log('找不到视频链接元素', item.outerHTML); return null; }
+        if (!linkElement) {
+            console.log('找不到视频链接元素', item.outerHTML);
+            return null;
+        }
         const videoUrl = linkElement.href;
+        if (!videoUrl) {
+            console.log('找不到视频 URL', linkElement);
+            return null;
+        }
         const bvidMatch = videoUrl.match(/\/video\/(BV\w+)/); // 使用正则表达式提取BV号
+        if (!bvidMatch) {
+            console.log('无法提取 BV 号', videoUrl);
+            return null;
+        }
         const bvid = bvidMatch[1];
         console.log(`正在获取 ${bvid} 视频的信息`);
+
         try {
             const response = await fetch(`https://api.bilibili.com/x/web-interface/view?bvid=${bvid}`, {
                 headers: {
