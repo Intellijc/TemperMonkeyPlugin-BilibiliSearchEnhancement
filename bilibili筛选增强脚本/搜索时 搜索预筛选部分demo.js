@@ -10,7 +10,7 @@
     'use strict'
 
     function filterAndExcludeByDate(cardList, excludeUids, minDanmaku, minPlayCount, dateStart, dateEnd) {
-        let videoInfoArray = [];
+        let videoInfoAndCard = [];
         console.log('初步筛选开始');
 
         // 遍历所有card，提取信息
@@ -18,6 +18,10 @@
 
             // 如果URL包含 '/cheese/play/'说明是bili课堂，跳过该卡片
             if (card.querySelector('a').href.includes('/cheese/play/')) { console.log('跳过课堂卡片:', card.querySelector('.bili-video-card__info--tit').textContent.trim()); return;}
+            // 如果URL包含'/live.bilibili.com'说明是bili直播,跳过该卡片
+            if (card.querySelector('a').href.includes('/live.bilibili.com/')) {console.log('跳过直播卡片:', card.querySelector('.bili-video-card__info--tit').textContent.trim());return;}
+            // 如果 card没有bili-video-card__info--owner属性, 说明是搜up得来的视频,跳过该卡片 todo:收录该卡片并删除up头像函数
+            if (!card.querySelector('.bili-video-card__info--owner')){console.log('跳过up主介绍卡片:', card.querySelector('.bili-video-card__info--tit').textContent.trim());return;}
 
             let upUid = card.querySelector('.bili-video-card__info--owner').getAttribute('href').split('/').pop();
             let bvId = card.querySelector('.bili-video-card__info--right a[href^="//www.bilibili.com/video/BV"]').getAttribute('href').match(/\/BV[\w]+\//)[0].replace(/\//g, '');
@@ -31,20 +35,22 @@
             let publishDate = card.querySelector('.bili-video-card__info--date').textContent.replace('·', '').trim();
             let videoName = card.querySelector('.bili-video-card__info--tit').textContent.trim();
 
-            videoInfoArray.push({
+            videoInfoAndCard.push({
                 upUid,
                 bvId,
                 danmakuCount,
                 playCount,
                 duration,
                 publishDate,
-                videoName
+                videoName,
+                card
             });
             console.log('获取到card:',upUid,bvId,danmakuCount,playCount,duration, publishDate,videoName);
         });
+        console.log('获取到videoInfoAndCard:', videoInfoAndCard);
 
         // 筛选视频
-        let filteredVideos = videoInfoArray.filter(video => {
+        let filteredInfoAndCardList = videoInfoAndCard.filter(video => {
             // 排除指定UP主
             if (excludeUids.includes(video.upUid)) { console.log(`up主在黑名单,排除《${video.videoName}》`); return false; }
 
@@ -63,20 +69,27 @@
         });
 
         // 返回筛选后的BV号列表
-        return filteredVideos.map(video => video.bvId);
+        return filteredInfoAndCardList;
     }
 
     // 假设参数
-    let cardList = document.querySelectorAll('.bili-video-card');
     let excludeUids = [];
-    let minDanmaku = 5;
+    let minDanmaku = 7;
     let minPlayCount = 2000;
     let dateStart = '2020-01-01';
     let dateEnd = '2024-07-31';
 
-    // 执行筛选
-    let filteredBvList = filterAndExcludeByDate(cardList, excludeUids, minDanmaku, minPlayCount, dateStart, dateEnd);
+    window.addEventListener('load', function() {
+        console.log('页面加载完成, 等待1秒后执行脚本');
+        setTimeout(async () => {
+            let cardList = document.querySelectorAll('.bili-video-card');
+            console.log('全部卡片获取成功:', cardList);
+            // 执行筛选
+            let preFilteredCardList = filterAndExcludeByDate(cardList, excludeUids, minDanmaku, minPlayCount, dateStart, dateEnd);
+            // 输出结果到控制台
+            console.log('初步筛选后的视频列表:', preFilteredCardList);
+        }, 1000); // 等待1秒
+    });
 
-    // 输出结果到控制台
-    console.log('初步筛选后的视频列表:', filteredBvList);
+
 })();
