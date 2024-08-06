@@ -104,8 +104,8 @@
         let videoDetailsArray = [];
         for (const preFilteredInfoAndCard of preFilteredInfoAndCardList) {
             let bvId = preFilteredInfoAndCard.card.querySelector('.bili-video-card__info--right a[href^="//www.bilibili.com/video/BV"]').getAttribute('href').match(/\/BV[\w]+\//)[0].replace(/\//g, '');
-            console.log('测试bv号:', bvId)
-            const response = await fetch(`https://api.bilibili.com/x/web-interface/view?bvid=${bvId}`);
+            console.log('查询${bvId}的详细信息:');
+            const response = await fetch(`https://api.bilibili.com/x/web-interface/view?bvid=${bvId}`);//todo:添加入localStorage及其一个小时过期时间(判断逻辑:从card中获取的信息,如果播放量变化率达到20%,就删除这条记录重新获取
             const data = await response.json();
             if (data.code === 0) {
                 const videoData = data.data;
@@ -174,22 +174,22 @@
         const sortedVideos = videoDetailsArray.map(video => {
             const view = video.view + params.k1;
             const score =
-                params.a * (video.like / Math.pow(view, params.b)) +
-                params.c * (video.favorite / Math.pow(view, params.b)) +
-                params.d * (video.coin / Math.pow(view, params.b)) +
-                params.e * (video.reply / (video.view + params.k2)) +
-                params.f * video.duration +
-                params.g * video.share;
+                  params.a * (video.like / Math.pow(view, params.b)) +
+                  params.c * (video.favorite / Math.pow(view, params.b)) +
+                  params.d * (video.coin / Math.pow(view, params.b)) +
+                  params.e * (video.reply / (video.view + params.k2)) +
+                  params.f * video.duration +
+                  params.g * video.share;
             return { video, score };
         });
 
         sortedVideos.sort((a, b) => b.score - a.score);// 排序
 
         // 输出排序结果
-        console.log('最终筛选和排序后的视频列表:');
         sortedVideos.forEach(item => {
             console.log(`得分: ${item.score}, 视频名称:${item.video.title}`);
         });
+        console.log('打分完成!');
 
         return sortedVideos.map(item => item.video);
     }
@@ -212,11 +212,15 @@
             container.children[i].appendChild(sortedArray[i].card);// 添加新的card
             console.log(`写入第${i + 1}个视频卡片:${sortedArray[i].title}`);
         }
+        console.log(`全部视频排序完成!`)
     }
 
 
     // 主函数
     async function main() {
+
+        //暂停连接observer
+        observer.disconnect();
 
         //获取视频card数据
         //let cardList = Array.from(document.querySelectorAll('.bili-video-card')).slice(0, 10);//todo 待添加翻页填满功能(不着急)
@@ -242,6 +246,9 @@
 
         // 视频按序写回页面
         await reorderVideos(sortedVideos);
+
+        // 重新连接 MutationObserver
+        observer.observe(document.body,{childList:true,subtree:true,});
     }
 
 
@@ -259,11 +266,25 @@
     let coinViewRatio = 0.0045; // 币播比
     const params = { a: 0.4, b: 1.5, c: 0.3, d: 0.2, e: 0.1, f: 0.05, g: 0.1, k1: 10, k2: 100 };
 
-    // 等待页面加载完成
+    // 当页面元素发生变化时，暂停0.5秒再调用主函数
+    const observer = new MutationObserver(async () =>{
+        if (document.visibilityState === "visible") {//排除页面切走时的刷新情况
+            if (document.readyState === "complete") {// 检查页面是否已经完全加载完成
+                setTimeout(async () => {// 暂停 500ms 再调用主函数
+                    await main();
+                }, 500);}}
+    });
+
+
+
+    // 等待页面加载完成执行主函数
     window.addEventListener('load', function () { //todo:不管是点击搜索结果 还是点击查询 还是回车查询 还是刷新 都执行
         console.log('页面加载完成, 等待0.5秒后执行脚本');
         setTimeout(async () => {
+
+            observer.observe(document.body, { childList: true, subtree: true, });// 初始化 Observer
             await main();
+
         }, 500); // 等待0.5秒
     });
 })();
