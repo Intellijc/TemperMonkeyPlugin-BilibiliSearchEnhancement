@@ -6,7 +6,7 @@
 // @icon         https://www.bilibili.com/favicon.ico?v=1
 // ==/UserScript==
 
-;(function () {
+; (function () {
     'use strict'
 
     //---------------------------------------------------------预筛选------------------------------------------------
@@ -180,7 +180,7 @@
                 params.e * (video.reply / (video.view + params.k2)) +
                 params.f * video.duration +
                 params.g * video.share;
-            return {video, score};
+            return { video, score };
         });
 
         sortedVideos.sort((a, b) => b.score - a.score);// 排序
@@ -195,32 +195,37 @@
     }
 
 
-    // 函数：视频按序写回页面 fatal:解决筛选出数量和显示的不一致  todo:识别并去掉纪录片/番剧/up主/活动的标题画面
+    // 函数：视频按序写回页面
     // 参数：sortedArray - 排序后的视频信息数组
     function reorderVideos(sortedArray) {
 
         const container = document.evaluate('//*[@id="i_cecream"]/div/div[2]/div[2]/div/div/div/div[2]/div', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-        if (!container) {
-            console.log('找不到视频列表容器');
-            return;
-        }
 
         // 删除除了sortedArray.length个视频卡片之外的所有视频卡片及其父元素
         while (container.children.length > sortedArray.length) {
             container.removeChild(container.lastChild);
         }
-        const videoContainers = container.children;
+
         // 重新写回视频元素
         for (let i = 0; i < sortedArray.length; i++) {
             container.children[i].innerHTML = '';// 删除原有的card
-            videoContainers[i].appendChild(sortedArray[i].card);// 添加新的card
+            container.children[i].appendChild(sortedArray[i].card);// 添加新的card
             console.log(`写入第${i + 1}个视频卡片:${sortedArray[i].title}`);
         }
     }
 
 
-    // 主函数：执行筛选,排序并写回页面
+    // 主函数
     async function main() {
+
+        //获取视频card数据
+        //let cardList = Array.from(document.querySelectorAll('.bili-video-card')).slice(0, 10);//todo 待添加翻页填满功能(不着急)
+        let cardList = document.querySelectorAll('.bili-video-card');
+        console.log('视频card数据获取成功:', cardList);
+
+        // 删除所有包含 "live-from" 属性的元素 (up卡片, 赛事, 活动, 番剧, 纪录片, 电影)
+        let unwantedElements = document.querySelectorAll('[live-from]:not(.brand-ad-list)');
+        unwantedElements.forEach(element => element.remove());
 
         //预筛选视频卡片
         let preFilteredCardList = filterAndExcludeByDate(cardList, excludeUids, minDanmaku, minPlayCount, dateStart, dateEnd)
@@ -245,24 +250,21 @@
 
     // 模拟预筛选后的结果，使用当前页面的前三个卡片
     let excludeUids = [];
-    let minDanmaku = 7;
+    let minDanmaku = 5;
     let minPlayCount = 2000;
     let dateStart = '2020-01-01';
     let dateEnd = '2024-08-06';
     let likeViewRatio = 0.01 // 赞播比
-    let favoriteViewRatio = 0.008; // 藏播比
+    let favoriteViewRatio = 0.0075; // 藏播比
     let coinViewRatio = 0.0045; // 币播比
-    let cardList;//视频卡片列表
-    const params = {a: 0.4, b: 1.5, c: 0.3, d: 0.2, e: 0.1, f: 0.05, g: 0.1, k1: 10, k2: 100};
+    const params = { a: 0.4, b: 1.5, c: 0.3, d: 0.2, e: 0.1, f: 0.05, g: 0.1, k1: 10, k2: 100 };
 
     // 等待页面加载完成
-    window.addEventListener('load', function () {
-        console.log('页面加载完成, 等待1秒后执行脚本');
+    window.addEventListener('load', function () { //todo:不管是点击搜索结果 还是点击查询 还是回车查询 还是刷新 都执行
+        console.log('页面加载完成, 等待0.5秒后执行脚本');
         setTimeout(async () => {
-            cardList = Array.from(document.querySelectorAll('.bili-video-card')).slice(0, 10);//todo 待添加翻页填满功能(不着急)
-            console.log('模拟数据获取成功:', cardList);
-            // 执行主函数
+
             await main();
-        }, 1000); // 等待1秒
+        }, 500); // 等待0.5秒
     });
 })();
