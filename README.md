@@ -10,7 +10,7 @@
 7. 根据标题中的关键词去掉视频
 8. 根据简介中的关键词去掉视频
 ---
-## 7.26 - 创建仓库,选择开源协议GPL3.0,开始研究他人代码
+# 7.26 - 创建仓库,选择开源协议GPL3.0,开始研究他人代码
 1. Bilibili搜索页面筛选增强脚本，增加今年、本月、当日发布筛选，可配合B站原有的综合排序、最多点击、最多弹幕、最多收藏使用。
 https://greasyfork.org/zh-CN/scripts/468336-bilibili%E7%AD%9B%E9%80%89%E5%A2%9E%E5%BC%BA/code 
 
@@ -27,7 +27,7 @@ https://github.com/SocialSisterYi/bilibili-API-collect
 https://github.com/10miaomiao/bilimiao2/tree/master
 
 ---
-## 7.31 实现基础功能之**根据投币播放比排序搜索首页结果** - 版本号: v1.0
+# 7.31 实现基础功能之**根据投币播放比排序搜索首页结果** - 版本号: v1.0
 
 无缝翻页功能最后做 因为大部分有效搜索结果都在前面
 
@@ -39,7 +39,7 @@ https://github.com/10miaomiao/bilimiao2/tree/master
 [视频评分算法](https://github.com/Qonstantine/TemperMonkeyPlugin-BilibiliSearchEnhancement/blob/805/bilibili%E7%AD%9B%E9%80%89%E5%A2%9E%E5%BC%BA%E8%84%9A%E6%9C%AC/%E8%A7%86%E9%A2%91%E8%AF%84%E5%88%86%E7%AE%97%E6%B3%95.md)
 
 ---
-## 8.1 开始实现按照发布时间筛选的demo
+# 8.1 开始实现按照发布时间筛选的demo
 
 整个脚本流程: 将整个"筛选 - 排除 - 排序"流程封装成一个事务
 
@@ -68,20 +68,38 @@ todo: 预筛选和正式排除算法 都要考虑到搜索的可能不是视频�
 
 
 ---
-## 8.2 修改后续筛选算法, 更新视频数不足自动补全功能, 视频筛选算法应用
+# 8.2 
+### 修改后续筛选算法
+### 更新视频数不足自动补全功能
+### 视频筛选算法应用
 TODO:后期更新功能: 通过up主名称 搜索up主 点击后添加入黑名单
 
 ---
-## 8.5 解决搜索bilibili课堂,up主,直播,番剧,影视带来的不同卡片信息问题;整合预筛选和进一步筛选到一起,修改返回值格式
+# 8.5 
+### 解决搜索bilibili课堂,up主,直播,番剧,影视带来的不同卡片信息问题
+### 整合预筛选和进一步筛选到一起
+### 修改返回值格式
 添加了一堆todo
 
 ---
-## 8.6 解决发布日期错误问题,实现导入params进行评分后筛选,写回页面使用异步函数,预筛选函数添加参数,删除活动窗口,up窗口,赛事窗口,番剧窗口,影视窗口,解决删除活动窗口后无法插入的bug,为页面添加变动检测,实现刷新 搜索 点击等导致的页面刷新会重新进行排序
-
+# 8.6 
+### 解决发布日期错误问题
+### 实现导入params进行评分后筛选
+### 写回页面使用异步函数
+### 预筛选函数添加参数
+### 删除活动窗口,up窗口,赛事窗口,番剧窗口,影视窗口,解决删除活动窗口后无法插入的bug
+### 为页面添加变动检测,实现刷新 搜索 点击等导致的页面刷新会重新进行排序
 坑:
-    return sortedVideos.map(item => item.video); 排序函数计算出score,返回的是{score,video} 返回如果是 sortedVideos.video是错的
-    如果在document.querySelectorAll('[live-from]:not(.brand-ad-list)');不排除.brand-ad-list,会导致之前用xpath做的写回定位失败
-    页面加载完成后,需要一定时间的延时防止获取到的herf信息为空
+* return sortedVideos.map(item => item.video); 排序函数计算出score,返回的是{score,video} 返回如果是 sortedVideos.video是错的
+* 如果在document.querySelectorAll('[live-from]:not(.brand-ad-list)');不排除.brand-ad-list,会导致之前用xpath做的写回定位失败
+* 页面加载完成后,需要一定时间的延时防止获取到的herf信息为空
 
 ---
-## 8.7 添加入localStorage及其过期判断逻辑:从card中获取的信息,如果播放量变化率达到5%,就删除这条记录重新获取;记录超出15000行 每次删除前2000行
+# 8.7 
+### 添加入localStorage及其过期判断逻辑:从card中获取的信息,如果播放量变化率达到5%,就删除这条记录重新获取
+### 记录超出15000行 每次删除前2000行
+### 修改前端 "更多筛选" 按钮加载 使其和页面一同加载而不是异步加载
+### 点击日期自动弹出日期选择器
+### 修改 "更多筛选" 为b站外观风格,添加css样式
+### 处理 "更多筛选" 自定义筛选日期
+
