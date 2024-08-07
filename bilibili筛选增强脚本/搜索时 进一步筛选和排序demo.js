@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Bilibili进一步筛选和排序组件
-// @version      2.1
+// @version      2.2
 // @description  使用预筛选结果进行进一步筛选和排序。
 // @match        https://search.bilibili.com/*
 // @icon         https://www.bilibili.com/favicon.ico?v=1
@@ -97,37 +97,78 @@
 
     //---------------------------------------------------------进一步筛选------------------------------------------------
 
+
+     // 函数：从API或LocalStorage获取视频信息 todo:后期有精力评估后考虑是否用IndexDB代替localstorage解决视频太多导致的可能减速问题
+     // 参数：bvId - 视频的BV ID
+     // 参数：prePlayCount - 视频之前的播放次数
+     // 返回值：视频详细信息对象或null（如果API调用失败）
+    async function fetchVideoInfo(bvId, prePlayCount, prePublishDate) {
+        let videoOrder = JSON.parse(localStorage.getItem('videoOrder')) || [];// 获取存储的视频顺序列表
+        const storedData = JSON.parse(localStorage.getItem(bvId));
+
+        if (storedData && Math.abs(storedData.view - prePlayCount) / storedData.view < 0.05) {
+            console.log(`从LocalStorage中获取视频信息: ${storedData.title}`);
+            return storedData;
+        }
+
+        const response = await fetch(`https://api.bilibili.com/x/web-interface/view?bvid=${bvId}`);
+        const data = await response.json();
+        if (data.code === 0) {
+            const videoData = data.data;
+            const videoInfo = {
+                bvid: videoData.bvid, // 视频的BV号
+                title: videoData.title, // 视频标题
+                pubdate: prePublishDate, // 发布日期
+                duration: videoData.duration, // 视频时长，单位为秒
+                view: prePlayCount, // 原始播放量
+                danmaku: videoData.stat.danmaku, // 弹幕数量
+                reply: videoData.stat.reply, // 评论数量
+                favorite: videoData.stat.favorite, // 收藏数量
+                coin: videoData.stat.coin, // 硬币数量
+                share: videoData.stat.share, // 分享数量
+                like: videoData.stat.like, // 点赞数量
+                upid: videoData.owner.mid, // UP主的用户ID
+                upname: videoData.owner.name, // UP主昵称
+            };
+
+            //存储新的视频信息到localstorage
+            localStorage.setItem(bvId, JSON.stringify(videoInfo));
+            console.log(`从API中获取视频信息: ${videoInfo.title}`);
+
+            // 更新视频顺序列表
+            videoOrder.push(bvId);
+
+            if (videoOrder.length > 15000) { const itemsToRemove = videoOrder.splice(0, 2000);// 如果记录数量超过 15000 个，删除最早添加的 2000 个记录
+                itemsToRemove.forEach(item => localStorage.removeItem(item));
+            }
+            // 更新视频顺序列表到 localStorage
+            localStorage.setItem('videoOrder', JSON.stringify(videoOrder));
+
+            return videoInfo;
+        } else {
+            console.error(`从API获取视频详细信息失败: ${data.message}`);
+            return null;
+    }
+}
+
     // 函数：获取所有视频的详细信息
     // 参数：preFilteredInfoAndCardList - 预筛选信息+卡片数组
     // 返回值：视频详细信息数组
     async function getVideoDetailsArray(preFilteredInfoAndCardList) {
         let videoDetailsArray = [];
         for (const preFilteredInfoAndCard of preFilteredInfoAndCardList) {
-            let bvId = preFilteredInfoAndCard.card.querySelector('.bili-video-card__info--right a[href^="//www.bilibili.com/video/BV"]').getAttribute('href').match(/\/BV[\w]+\//)[0].replace(/\//g, '');
-            console.log('查询${bvId}的详细信息:');
-            const response = await fetch(`https://api.bilibili.com/x/web-interface/view?bvid=${bvId}`);//todo:添加入localStorage及其一个小时过期时间(判断逻辑:从card中获取的信息,如果播放量变化率达到20%,就删除这条记录重新获取
-            const data = await response.json();
-            if (data.code === 0) {
-                const videoData = data.data;
+
+            let bvId = preFilteredInfoAndCard.preBvId;//预先获取详细信息中不好获取的
+            let prePlayCount = preFilteredInfoAndCard.prePlayCount;
+            let prePublishDate = preFilteredInfoAndCard.prePublishDate;
+
+            const videoData = await fetchVideoInfo(bvId, prePlayCount, prePublishDate);
+            if (videoData) {
                 videoDetailsArray.push({
-                    //todo:增加预筛选获取字段
-                    bvid: videoData.bvid, // 视频的BV号
-                    title: videoData.title, // 视频标题
-                    pubdate: preFilteredInfoAndCard.prePublishDate, // 发布日期
-                    duration: videoData.duration, // 视频时长，单位为秒
-                    view: videoData.stat.view.toString().includes('万') ? parseFloat(videoData.stat.view.toString().replace('万', '')) * 10000 : parseInt(videoData.stat.view.toString()), // 处理后的播放量
-                    danmaku: videoData.stat.danmaku, // 弹幕数量
-                    reply: videoData.stat.reply, // 评论数量
-                    favorite: videoData.stat.favorite, // 收藏数量
-                    coin: videoData.stat.coin, // 硬币数量
-                    share: videoData.stat.share, // 分享数量
-                    like: videoData.stat.like, // 点赞数量
-                    upid: videoData.owner.mid, // UP主的用户ID
-                    upname: videoData.owner.name, // UP主昵称
+                    ...videoData,
+                    pubdate: preFilteredInfoAndCard.prePublishDate, // 保持原来的发布日期
                     card: preFilteredInfoAndCard.card // 原始卡片元素
                 });
-            } else {
-                console.error(`获取视频详细信息失败: ${data.message}`);
             }
         }
         console.log('视频详细信息数组:', videoDetailsArray);
@@ -278,7 +319,7 @@
 
 
     // 等待页面加载完成执行主函数
-    window.addEventListener('load', function () { //todo:不管是点击搜索结果 还是点击查询 还是回车查询 还是刷新 都执行
+    window.addEventListener('load', function () {
         console.log('页面加载完成, 等待0.5秒后执行脚本');
         setTimeout(async () => {
 
