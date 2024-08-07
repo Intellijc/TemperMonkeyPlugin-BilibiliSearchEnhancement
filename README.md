@@ -82,3 +82,6 @@ TODO:后期更新功能: 通过up主名称 搜索up主 点击后添加入黑名�
     return sortedVideos.map(item => item.video); 排序函数计算出score,返回的是{score,video} 返回如果是 sortedVideos.video是错的
     如果在document.querySelectorAll('[live-from]:not(.brand-ad-list)');不排除.brand-ad-list,会导致之前用xpath做的写回定位失败
     页面加载完成后,需要一定时间的延时防止获取到的herf信息为空
+
+---
+## 8.7 添加入localStorage及其过期判断逻辑:从card中获取的信息,如果播放量变化率达到5%,就删除这条记录重新获取;记录超出15000行 每次删除前2000行
