@@ -5,7 +5,8 @@ if (storedData && Math.abs(storedData.view - prePlayCount) / storedData.view < 0
 }
 ------------------------------------------------------------------------------------------
 
-let isMainRunning = false; // 标志位，表示 `main` 函数是否正在执行
+    let
+isMainRunning = false; // 标志位，表示 `main` 函数是否正在执行
 let throttleTimeout; // 用于节流的超时标志
 
 const observer = new MutationObserver(() => {
@@ -25,3 +26,12 @@ const observer = new MutationObserver(() => {
 
 删除main部分的observer
 ----------------------------------------------------------------------------------------
+
+    下一页
+按钮
+#i_cecream > div > div
+:
+nth - child(2) > div.search - content--
+gray.search - content > div > div > div > div.flex_center.mt_x50.mb_x50 > div > div > button
+:
+nth - child(11)
