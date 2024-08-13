@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         整合 展开时间筛选 和 进一步筛选组件
 // @namespace    http://tampermonkey.net/
-// @version      3.0
+// @version      3.1
 // @description  在Bilibili搜索结果页添加发布时间筛选、进一步筛选和排序功能
-// @author       YouIntellijc
+// @author       Intellijc
 // @match        *://search.bilibili.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=bilibili.com
 // @grant        none
@@ -472,7 +472,7 @@
 
         // 进一步筛选
         let furtherFilteredVideos = furtherFilterVideos(videoDetailsArray, likeViewRatio, favoriteViewRatio, coinViewRatio);
-        console.log('进一步筛选后的视频:', furtherFilteredVideos);
+        console.log('进一步筛选后的视频:', furtherFilteredVideos);//todo: 如果筛选完没有视频了 调用最开始的工具类输出"无符合标准的高质量视频"提示
 
         // 排序
         let sortedVideos = sortVideos(furtherFilteredVideos, params);
@@ -484,29 +484,81 @@
 
     // ----------------------------------------------------------------------------- 初始化和事件监听 -----------------------------------------------------------------------------
     // 当页面元素发生变化时，暂停0.5秒再调用主函数
-    let isMainRunning = false; // 标志位，表示 `main` 函数是否正在执行
     let throttleTimeout; // 用于节流的超时标志
+    let mainPromise = Promise.resolve(); // 初始化为一个已解决的 Promise
+    let cooldownTimer = null; // 用于冷却期的定时器
+    const COOLDOWN_PERIOD = 2000; // 2秒冷却期
+    const THROTTLE_DELAY = 500; // 500ms 节流延迟
 
-    const observer = new MutationObserver(() => {
-        if (document.visibilityState === "visible" && document.readyState === "complete") { // 排除页面切走时的刷新情况,检查页面是否已经完全加载完成
-            if (!isMainRunning) { // 如果 `main` 函数没有正在执行
-                clearTimeout(throttleTimeout); // 清除之前的超时
-                throttleTimeout = setTimeout(async () => {
-                    isMainRunning = true; // 设置标志位，表示 `main` 函数正在执行
-                    observer.disconnect(); // 暂停监视器
-                    await main();
-                    observer.observe(document.body, {childList: true, subtree: true}); // 重新启动监视器
-                    isMainRunning = false; // `main` 函数执行完成，重置标志位
-                }, 500); // 设定节流时间为500ms，可以根据实际情况调整
+    function observeVideoCards() {
+        const targetNode = document.querySelector('#i_cecream .search-content');
+        const observerOptions = {
+            childList: true,
+            subtree: true,
+            attributes: false,
+            characterData: false
+        };
+
+        const observer = new MutationObserver((mutations) => {
+            if (document.visibilityState === "visible" && document.readyState === "complete") {
+                // 检查是否有 .bili-video-card 元素的变化
+                const hasVideoCardChanges = mutations.some(mutation =>
+                                                           Array.from(mutation.addedNodes).some(node =>node.nodeType === Node.ELEMENT_NODE &&(node.classList.contains('bili-video-card') || node.querySelector('.bili-video-card'))) // 检查是否有新增的card 元素
+                                                           || Array.from(mutation.removedNodes).some(node => node.nodeType === Node.ELEMENT_NODE &&(node.classList.contains('bili-video-card') || node.querySelector('.bili-video-card')) )// 检查是否有被移除的card 元素
+                                                          );
+
+                if (hasVideoCardChanges) {
+                    if (cooldownTimer) {
+                        console.log('在冷却期内，忽略此次调用');
+                        return;
+                    }
+
+                    // 使用 Promise 链来确保互斥执行
+                    mainPromise = mainPromise.then(() => {
+                        return new Promise((resolve) => {
+                            clearTimeout(throttleTimeout);// 清除之前的超时
+                            throttleTimeout = setTimeout(() => {
+                                requestAnimationFrame(async () => {
+                                    console.log('检测到 .bili-video-card 变化，开始执行 main 函数');
+                                    observer.disconnect(); // 暂停监视器
+                                    console.time('main函数执行时间');
+                                    await main();
+                                    console.timeEnd('main函数执行时间');
+                                    console.log('---------------------------------------------main 函数执行完毕------------------------------------------------');
+
+                                    // 设置冷却期
+                                    cooldownTimer = setTimeout(() => {
+                                        cooldownTimer = null;
+                                        console.log('冷却期结束，重新启动观察器');
+                                        observer.observe(targetNode, observerOptions);
+                                    }, COOLDOWN_PERIOD);
+
+                                    resolve();
+                                });
+                            }, THROTTLE_DELAY);
+                        });
+                    }).catch(error => {
+                        console.error('main 函数执行出错:', error);
+                    });
+                }
             }
+        });
+
+        if (targetNode) {// 如果找到目标节点，开始观察
+            observer.observe(targetNode, observerOptions);
+            console.log('开始观察目标节点');
+        } else {
+            console.error('未找到目标节点，无法启动 observer');
         }
-    });
+
+        return observer;
+    }
 
     // 等待页面加载完成执行主函数
     window.addEventListener('load', function () {
         console.log('页面加载完成, 等待0.5秒后执行脚本');
         setTimeout(async () => {
-            observer.observe(document.body, { childList: true, subtree: true, });// 初始化 Observer
+            const observer = observeVideoCards();
             await main();
         }, 500); // 等待0.5秒
     });
